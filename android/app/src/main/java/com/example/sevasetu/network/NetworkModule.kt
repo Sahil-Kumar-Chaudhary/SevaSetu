@@ -3,6 +3,7 @@ package com.example.sevasetu.network
 import android.content.Context
 import com.example.sevasetu.data.remote.api.AuthApi
 import com.example.sevasetu.data.remote.api.IssueApi
+import com.example.sevasetu.data.remote.api.UserApi
 import com.example.sevasetu.utils.TokenManager
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -22,6 +23,11 @@ object NetworkModule {
     fun provideIssueApi(context: Context): IssueApi {
         val retrofit = provideRetrofit(context)
         return retrofit.create(IssueApi::class.java)
+    }
+
+    fun provideUserApi(context: Context): UserApi {
+        val retrofit = provideRetrofit(context)
+        return retrofit.create(UserApi::class.java)
     }
 
     private fun provideRetrofit(context: Context): Retrofit {

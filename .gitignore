@@ -29,3 +29,6 @@ captures/
 *.codex
 *.swp
 test/
+google-services
+google-services.json
+google-service.json

@@ -29,7 +29,10 @@ import {
   departmentAdminListIssues,
   departmentAdminSubmitProof,
   departmentAdminUpdateStatus,
-  departmentAdminUploadProof
+  departmentAdminUploadProof,
+  stateAdminGenerateMonthlySummary,
+  stateAdminSendMonthlySummary,
+  adminSendTestPush
 } from '../controllers/roleBasedIssueManagement.controller.js';
 import {
   listStaffUsers,
@@ -85,6 +88,9 @@ router.get('/department/issues', adminAuthMiddleware, departmentAdminListIssues)
 router.patch('/department/issues/:issueId/submit-proof', adminAuthMiddleware, departmentAdminSubmitProof);
 router.patch('/department/issues/:issueId/update-status', adminAuthMiddleware, departmentAdminUpdateStatus);
 router.post('/department/proofs/upload', adminAuthMiddleware, departmentAdminUploadProof);
+router.post('/state/reports/monthly-summary/generate', adminAuthMiddleware, stateAdminGenerateMonthlySummary);
+router.post('/state/reports/monthly-summary/send', adminAuthMiddleware, stateAdminSendMonthlySummary);
+router.post('/notifications/test-push', adminAuthMiddleware, adminSendTestPush);
 
 // Staff Management
 router.get('/staff', adminAuthMiddleware, listStaffUsers);

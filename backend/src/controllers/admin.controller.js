@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/prisma.js';
+import { createIssueUpdateNotification } from '../services/notification.service.js';
 
 const toTrimmedString = (value) => {
   if (value === undefined || value === null) return '';
@@ -487,7 +488,7 @@ export const assignIssue = async (req, res) => {
       return res.status(404).json({ error: 'Issue not found' });
     }
 
-    const [updatedIssue] = await prisma.$transaction([
+    const [updatedIssue, issueUpdate] = await prisma.$transaction([
       prisma.issue.update({
         where: { id: parsedIssueId },
         data: { departmentId: parseInt(departmentId) }
@@ -505,6 +506,8 @@ export const assignIssue = async (req, res) => {
         }
       })
     ]);
+
+    await createIssueUpdateNotification({ issueUpdateId: issueUpdate.id });
 
     return res.json({
       message: 'Issue assigned successfully',
@@ -553,7 +556,7 @@ export const forwardIssue = async (req, res) => {
       return res.status(404).json({ error: 'Issue not found' });
     }
 
-    const [updatedIssue] = await prisma.$transaction([
+    const [updatedIssue, issueUpdate] = await prisma.$transaction([
       prisma.issue.update({
         where: { id: parsedIssueId },
         data: { departmentId: parseInt(toDepartmentId), status: 'forwarded' }
@@ -572,6 +575,8 @@ export const forwardIssue = async (req, res) => {
         }
       })
     ]);
+
+    await createIssueUpdateNotification({ issueUpdateId: issueUpdate.id });
 
     return res.json({
       message: 'Issue forwarded successfully',
@@ -626,6 +631,10 @@ export const addRemarks = async (req, res) => {
       }
     });
 
+    if (update.visibleToCitizen) {
+      await createIssueUpdateNotification({ issueUpdateId: update.id });
+    }
+
     return res.json({
       message: 'Remark added successfully',
       update
@@ -669,7 +678,7 @@ export const updateIssueStatus = async (req, res) => {
       return res.status(404).json({ error: 'Issue not found' });
     }
 
-    const [updatedIssue] = await prisma.$transaction([
+    const [updatedIssue, issueUpdate] = await prisma.$transaction([
       prisma.issue.update({
         where: { id: parsedIssueId },
         data: { status: newStatus }
@@ -686,6 +695,8 @@ export const updateIssueStatus = async (req, res) => {
         }
       })
     ]);
+
+    await createIssueUpdateNotification({ issueUpdateId: issueUpdate.id });
 
     return res.json({
       message: 'Issue status updated successfully',
@@ -734,7 +745,7 @@ export const closeIssue = async (req, res) => {
       return res.status(404).json({ error: 'Issue not found' });
     }
 
-    const [updatedIssue] = await prisma.$transaction([
+    const [updatedIssue, issueUpdate] = await prisma.$transaction([
       prisma.issue.update({
         where: { id: parsedIssueId },
         data: { status: 'closed' }
@@ -752,6 +763,8 @@ export const closeIssue = async (req, res) => {
         }
       })
     ]);
+
+    await createIssueUpdateNotification({ issueUpdateId: issueUpdate.id });
 
     return res.json({
       message: 'Issue closed successfully',

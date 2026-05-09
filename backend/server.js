@@ -1,4 +1,5 @@
 import app from './src/app.js';
+import { startScheduler } from './src/jobs/scheduler.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -6,4 +7,5 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}
         http://localhost:${PORT}/
     `);
+  startScheduler();
 });

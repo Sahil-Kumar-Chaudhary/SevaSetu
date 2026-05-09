@@ -1,5 +1,8 @@
 import prisma from '../config/prisma.js';
 import bcrypt from 'bcrypt';
+import { createIssueUpdateNotification } from '../services/notification.service.js';
+import { generateAndSendMonthlySummary } from '../services/monthly-report.service.js';
+import { sendPushToToken } from '../services/fcm.service.js';
 
 const STATUS_GROUPS = {
   pending: ['open', 'assigned', 'in_progress'],
@@ -418,7 +421,7 @@ export const stateAdminForwardToDistrict = async (req, res) => {
       return res.status(400).json({ error: 'Invalid target district' });
     }
 
-    const [updatedIssue] = await prisma.$transaction([
+    const [updatedIssue, issueUpdate] = await prisma.$transaction([
       prisma.issue.update({
         where: { id: parsedIssueId },
         data: {
@@ -439,6 +442,8 @@ export const stateAdminForwardToDistrict = async (req, res) => {
       })
     ]);
     clearAdminGetResponseCache();
+
+    await createIssueUpdateNotification({ issueUpdateId: issueUpdate.id });
 
     return res.json({
       message: 'Issue forwarded to district successfully',
@@ -716,7 +721,7 @@ export const districtAdminAssignToDepartment = async (req, res) => {
       return res.status(403).json({ error: 'Issue is outside your district scope' });
     }
 
-    const [updatedIssue] = await prisma.$transaction([
+    const [updatedIssue, issueUpdate] = await prisma.$transaction([
       prisma.issue.update({
         where: { id: parsedIssueId },
         data: {
@@ -738,6 +743,8 @@ export const districtAdminAssignToDepartment = async (req, res) => {
       })
     ]);
     clearAdminGetResponseCache();
+
+    await createIssueUpdateNotification({ issueUpdateId: issueUpdate.id });
 
     return res.json({
       message: 'Issue assigned to department successfully',
@@ -783,7 +790,7 @@ export const districtAdminCloseIssue = async (req, res) => {
       return res.status(403).json({ error: 'Issue is outside your district scope' });
     }
 
-    const [updatedIssue] = await prisma.$transaction([
+    const [updatedIssue, issueUpdate] = await prisma.$transaction([
       prisma.issue.update({
         where: { id: parsedIssueId },
         data: { status: 'closed' }
@@ -802,6 +809,8 @@ export const districtAdminCloseIssue = async (req, res) => {
       })
     ]);
     clearAdminGetResponseCache();
+
+    await createIssueUpdateNotification({ issueUpdateId: issueUpdate.id });
 
     return res.json({
       message: 'Issue closed successfully after review',
@@ -1052,7 +1061,7 @@ export const departmentAdminSubmitProof = async (req, res) => {
       }
     }
 
-    const [updatedIssue] = await prisma.$transaction([
+    const [updatedIssue, issueUpdate] = await prisma.$transaction([
       prisma.issue.update({
         where: { id: parsedIssueId },
         data: { status: 'resolved' }
@@ -1071,6 +1080,8 @@ export const departmentAdminSubmitProof = async (req, res) => {
       })
     ]);
     clearAdminGetResponseCache();
+
+    await createIssueUpdateNotification({ issueUpdateId: issueUpdate.id });
 
     return res.json({
       message: 'Proof submitted. Issue sent back to district admin for review and closure',
@@ -1127,7 +1138,7 @@ export const departmentAdminUpdateStatus = async (req, res) => {
       return res.status(400).json({ error: 'Invalid status for department admin' });
     }
 
-    const [updatedIssue] = await prisma.$transaction([
+    const [updatedIssue, issueUpdate] = await prisma.$transaction([
       prisma.issue.update({
         where: { id: parsedIssueId },
         data: { status: newStatus }
@@ -1145,6 +1156,8 @@ export const departmentAdminUpdateStatus = async (req, res) => {
       })
     ]);
     clearAdminGetResponseCache();
+
+    await createIssueUpdateNotification({ issueUpdateId: issueUpdate.id });
 
     return res.json({
       message: 'Issue status updated successfully',
@@ -1184,5 +1197,53 @@ export const departmentAdminUploadProof = async (req, res) => {
   } catch (error) {
     console.error('departmentAdminUploadProof error:', error);
     return res.status(500).json({ error: 'Failed to upload proof' });
+  }
+};
+
+export const stateAdminGenerateMonthlySummary = async (req, res) => {
+  try {
+    const adminId = req.user?.userId;
+    if (!adminId) return res.sendStatus(401);
+
+    const adminData = await getAdminRole(adminId);
+    if (!isStateAdmin(adminData)) {
+      return res.status(403).json({ error: 'STATE_ADMIN access required' });
+    }
+
+    const result = await generateAndSendMonthlySummary({ month: req.body?.month || req.query?.month });
+    return res.json(result);
+  } catch (error) {
+    console.error('stateAdminGenerateMonthlySummary error:', error);
+    return res.status(error.statusCode || 500).json({
+      error: error.statusCode ? error.message : 'Failed to generate monthly summary'
+    });
+  }
+};
+
+export const stateAdminSendMonthlySummary = async (req, res) => {
+  return stateAdminGenerateMonthlySummary(req, res);
+};
+
+export const adminSendTestPush = async (req, res) => {
+  try {
+    const adminId = req.user?.userId;
+    if (!adminId) return res.sendStatus(401);
+
+    const token = toTrimmedString(req.body?.token);
+    if (!token) return res.status(400).json({ error: 'token is required' });
+
+    const result = await sendPushToToken({
+      token,
+      payload: {
+        title: toTrimmedString(req.body?.title) || 'SevaSetu Notification Test',
+        body: toTrimmedString(req.body?.body) || 'FCM setup is working.',
+        data: { type: 'TEST' }
+      }
+    });
+
+    return res.json(result);
+  } catch (error) {
+    console.error('adminSendTestPush error:', error);
+    return res.status(500).json({ error: 'Failed to send test push' });
   }
 };

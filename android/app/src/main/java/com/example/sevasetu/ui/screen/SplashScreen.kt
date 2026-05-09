@@ -1,10 +1,13 @@
 package com.example.sevasetu.ui.screen
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -44,16 +47,29 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sevasetu.Login
 import com.example.sevasetu.R
+import com.example.sevasetu.notifications.FcmTokenRegistrar
+import com.example.sevasetu.notifications.NotificationPermissionHelper
+import com.example.sevasetu.notifications.NotificationSupport
 import com.example.sevasetu.ui.theme.SevaSetuTheme
+import com.example.sevasetu.utils.ThemePreferenceManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.HttpURLConnection
 import java.net.URL
-import com.example.sevasetu.utils.ThemePreferenceManager
 
 class SplashScreen : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Initialize notification channels only (no backend call before auth)
+        try {
+            FcmTokenRegistrar.initializeNotificationChannels(this)
+            Log.d("SplashScreen", "Notification system initialized")
+        } catch (e: Exception) {
+            Log.e("SplashScreen", "Error initializing notification system", e)
+        }
+
         val themePreferenceManager = ThemePreferenceManager(this)
         enableEdgeToEdge()
         setContent {
@@ -85,7 +101,7 @@ fun SplashScreenContent(onNavigate: () -> Unit) {
 
                 connection.inputStream.close()
                 connection.disconnect()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Ignore errors (server might still be waking up)
             }
         }

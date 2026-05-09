@@ -9,6 +9,7 @@ import com.example.sevasetu.data.remote.dto.UserProfileDto
 import com.example.sevasetu.data.repository.UserRepository
 import com.example.sevasetu.utils.JurisdictionConstants
 import com.example.sevasetu.utils.TokenManager
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -137,8 +138,20 @@ class ProfileViewModel(
     }
 
     fun logout() {
-        tokenManager.clear()
-        _profileUiState.value = ProfileUiState(sessionExpired = true)
+        FirebaseMessaging.getInstance().token
+            .addOnSuccessListener { token ->
+                viewModelScope.launch {
+                    if (token.isNotBlank()) {
+                        repository.removeDeviceToken(token)
+                    }
+                    tokenManager.clear()
+                    _profileUiState.value = ProfileUiState(sessionExpired = true)
+                }
+            }
+            .addOnFailureListener {
+                tokenManager.clear()
+                _profileUiState.value = ProfileUiState(sessionExpired = true)
+            }
     }
 }
 

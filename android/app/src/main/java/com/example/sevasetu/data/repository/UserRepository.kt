@@ -41,6 +41,15 @@ class UserRepository(
         throw IllegalStateException(mapNetworkError(error, "load activity"))
     }
 
+    suspend fun removeDeviceToken(token: String): Result<Unit> = runCatching {
+        val response = userApi.deleteDeviceToken(token)
+        if (!response.isSuccessful) {
+            throw IllegalStateException(extractError(response.code(), response.errorBody()?.string(), "remove device token"))
+        }
+    }.recoverCatching { error ->
+        throw IllegalStateException(mapNetworkError(error, "remove device token"))
+    }
+
     private fun extractError(code: Int, raw: String?, action: String): String {
         val message = parseMessage(raw)
         return message ?: "Failed to $action ($code)"

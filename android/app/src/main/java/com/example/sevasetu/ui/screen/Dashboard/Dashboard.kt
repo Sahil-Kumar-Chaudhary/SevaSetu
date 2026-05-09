@@ -4,13 +4,14 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.drawable.BitmapDrawable
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.ViewGroup
 import android.Manifest
 import androidx.annotation.RequiresApi
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import android.content.pm.PackageManager
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -80,11 +81,46 @@ import androidx.core.graphics.createBitmap
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import com.example.sevasetu.ui.screen.Reports.IssueReport
 import com.example.sevasetu.utils.ThemePreferenceManager
+import com.example.sevasetu.notifications.FcmTokenRegistrar
+import com.example.sevasetu.notifications.NotificationSupport
+import com.example.sevasetu.notifications.NotificationPermissionHelper
 
 class Dashboard : ComponentActivity() {
+    private val requestNotificationPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            android.util.Log.d("Dashboard", "Notification permission granted")
+        } else {
+            android.util.Log.w("Dashboard", "Notification permission denied by user")
+        }
+    }
+
+    private val requestLocationPermissions = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (fineGranted || coarseGranted) {
+            android.util.Log.d("Dashboard", "Location permission granted")
+        } else {
+            android.util.Log.w("Dashboard", "Location permission denied by user")
+        }
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Initialize notification system
+        NotificationSupport.createChannels(this)
+        FcmTokenRegistrar.registerCurrentToken(this)
+
+        // Request permission and log status
+        requestNotificationPermissionIfNeeded()
+        requestLocationPermissionIfNeeded()
+        NotificationPermissionHelper.logPermissionStatus(this)
+
         val themePreferenceManager = ThemePreferenceManager(this)
         enableEdgeToEdge()
         setContent {
@@ -92,6 +128,34 @@ class Dashboard : ComponentActivity() {
             SevaSetuTheme(themePreference = themePreference) {
                 DashboardScreen()
             }
+        }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (NotificationPermissionHelper.needsPermissionRequest(this)) {
+            android.util.Log.d("Dashboard", "Requesting POST_NOTIFICATIONS permission")
+            requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    private fun requestLocationPermissionIfNeeded() {
+        val fineGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        val coarseGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (!fineGranted && !coarseGranted) {
+            android.util.Log.d("Dashboard", "Requesting location permissions")
+            requestLocationPermissions.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
         }
     }
 }

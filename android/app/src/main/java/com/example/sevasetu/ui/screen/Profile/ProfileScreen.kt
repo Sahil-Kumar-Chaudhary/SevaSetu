@@ -476,9 +476,9 @@ fun ProfileScreenContent(
         ) {
             Surface(
                 modifier = Modifier
-                    .fillMaxWidth(if (sheet == ProfileSheet.THEME_SELECTOR) 0.85f else 0.94f)
+                    .fillMaxWidth(if (sheet == ProfileSheet.THEME_SELECTOR || sheet == ProfileSheet.LANGUAGE_SELECTOR) 0.85f else 0.94f)
                     .then(
-                        if (sheet == ProfileSheet.THEME_SELECTOR) 
+                        if (sheet == ProfileSheet.THEME_SELECTOR || sheet == ProfileSheet.LANGUAGE_SELECTOR || sheet == ProfileSheet.HELP_SUPPORT) 
                             Modifier.wrapContentHeight() 
                         else 
                             Modifier.fillMaxHeight(0.88f)
@@ -488,13 +488,16 @@ fun ProfileScreenContent(
                 shadowElevation = 16.dp
             ) {
                 Column(
-                    modifier = if (sheet == ProfileSheet.THEME_SELECTOR) 
+                    modifier = if (sheet == ProfileSheet.THEME_SELECTOR || sheet == ProfileSheet.LANGUAGE_SELECTOR || sheet == ProfileSheet.HELP_SUPPORT) 
                         Modifier.padding(vertical = 8.dp) 
                     else 
                         Modifier.fillMaxSize()
                 ) {
                     when (sheet) {
-                        ProfileSheet.MY_ACTIVITY -> MyActivitySheetContent(activityState = activityState)
+                        ProfileSheet.MY_ACTIVITY -> MyActivitySheetContent(
+                            activityState = activityState,
+                            onDismiss = { activeSheet = null }
+                        )
                         ProfileSheet.ACCOUNT_SETTINGS -> {
                             if (viewModel != null) {
                                 AccountSettingsSheetContent(
@@ -508,7 +511,8 @@ fun ProfileScreenContent(
                                     onAddressLatChanged = viewModel::onAddressLatChanged,
                                     onAddressLngChanged = viewModel::onAddressLngChanged,
                                     onProfileImageUrlChanged = viewModel::onProfileImageUrlChanged,
-                                    onSave = viewModel::saveAccountSettings
+                                    onSave = viewModel::saveAccountSettings,
+                                    onDismiss = { activeSheet = null }
                                 )
                             }
                         }
@@ -536,7 +540,7 @@ fun ProfileScreenContent(
 private fun LanguageSelectorSheetContent(
     onLanguageSelected: (String) -> Unit
 ) {
-    val languages = listOf("English", "Hindi", "Punjabi", "Bengali", "Marathi", "Telugu", "Tamil", "Gujarati")
+    val languages = listOf("English", "Hindi")
     var selectedLanguage by remember { mutableStateOf("English") }
 
     Column(
@@ -603,7 +607,6 @@ private fun HelpSupportSheetContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxHeight()
             .verticalScroll(rememberScrollState())
             .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -631,9 +634,9 @@ private fun HelpSupportSheetContent(
         }
 
         HelpSection(title = "Contact Us") {
-            ContactItem(icon = Icons.Default.Language, label = "Website", value = "www.sevasetu.gov.in")
-            ContactItem(icon = Icons.Default.Notifications, label = "Support Email", value = "support@sevasetu.gov.in")
-            ContactItem(icon = Icons.Default.Settings, label = "Helpline", value = "1800-123-4567")
+            ContactItem(icon = Icons.Default.Language, label = "Website", value = "xyz.sevasetu.gov.in")
+            ContactItem(icon = Icons.Default.Notifications, label = "Support Email", value = "sahilku707@gmail.com")
+            ContactItem(icon = Icons.Default.Settings, label = "Helpline", value = "7070430207")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -836,7 +839,10 @@ fun ProfileScreenDarkPreview() {
 }
 
 @Composable
-private fun MyActivitySheetContent(activityState: MyActivityUiState) {
+private fun MyActivitySheetContent(
+    activityState: MyActivityUiState,
+    onDismiss: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -856,7 +862,7 @@ private fun MyActivitySheetContent(activityState: MyActivityUiState) {
                 color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
-            IconButton(onClick = { /* Dismiss is handled by parent Dialog */ }) {
+            IconButton(onClick = onDismiss) {
                 Icon(Icons.Default.Close, contentDescription = "Close", tint = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -930,7 +936,8 @@ private fun AccountSettingsSheetContent(
     onAddressLatChanged: (String) -> Unit,
     onAddressLngChanged: (String) -> Unit,
     onProfileImageUrlChanged: (String) -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     var districtMenuExpanded by remember { mutableStateOf(false) }
     val districtOptions = remember { JurisdictionConstants.DISTRICTS.map { it.name } }
@@ -954,7 +961,7 @@ private fun AccountSettingsSheetContent(
                 color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
-            IconButton(onClick = { /* Dismiss is handled by parent Dialog */ }) {
+            IconButton(onClick = onDismiss) {
                 Icon(Icons.Default.Close, contentDescription = "Close", tint = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }

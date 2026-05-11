@@ -30,7 +30,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.1"
 
         buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"${getLocalProperty("cloudinary.cloud_name")}\"")
         buildConfigField("String", "CLOUDINARY_UPLOAD_PRESET", "\"${getLocalProperty("cloudinary.upload_preset")}\"")

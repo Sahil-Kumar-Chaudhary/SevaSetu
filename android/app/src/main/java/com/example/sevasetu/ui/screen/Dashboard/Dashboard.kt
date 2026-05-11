@@ -94,6 +94,9 @@ class Dashboard : ComponentActivity() {
         } else {
             android.util.Log.w("Dashboard", "Notification permission denied by user")
         }
+
+        // Continue with location permission after the notification prompt resolves.
+        requestLocationPermissionIfNeeded()
     }
 
     private val requestLocationPermissions = registerForActivityResult(
@@ -117,8 +120,10 @@ class Dashboard : ComponentActivity() {
         FcmTokenRegistrar.registerCurrentToken(this)
 
         // Request permission and log status
-        requestNotificationPermissionIfNeeded()
-        requestLocationPermissionIfNeeded()
+        val notificationPromptShown = requestNotificationPermissionIfNeeded()
+        if (!notificationPromptShown) {
+            requestLocationPermissionIfNeeded()
+        }
         NotificationPermissionHelper.logPermissionStatus(this)
 
         val themePreferenceManager = ThemePreferenceManager(this)
@@ -131,11 +136,14 @@ class Dashboard : ComponentActivity() {
         }
     }
 
-    private fun requestNotificationPermissionIfNeeded() {
+    private fun requestNotificationPermissionIfNeeded(): Boolean {
         if (NotificationPermissionHelper.needsPermissionRequest(this)) {
             android.util.Log.d("Dashboard", "Requesting POST_NOTIFICATIONS permission")
             requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            return true
         }
+
+        return false
     }
 
     private fun requestLocationPermissionIfNeeded() {

@@ -86,6 +86,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -440,9 +441,11 @@ fun ProfileScreenContent(
             item {
                 Text(
                     text = "VERSION ${readAppVersionName()}",
+                    modifier = Modifier.fillMaxWidth(),
                     fontSize = 10.sp,
                     color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
                 )
             }
 
